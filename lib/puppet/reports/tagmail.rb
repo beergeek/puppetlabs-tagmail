@@ -102,6 +102,25 @@ Puppet::Reports.register_report(:tagmail) do
       end
     end
 
+    if file_hash[:strings]
+      file_hash[:strings].each do |string_value|
+        string_array = string_value.split('=')
+        string_array.collect do |string_value|
+          string_value.strip!
+        end
+        if string_array[0] == 'node_name_first'
+          if string_array[1] =~ /^(true|yes)$/i
+            string_array[1] = true
+          elsif string_array[1] =~/^(false|no)$/i
+            string_array[1] = false
+          else
+            raise Puppet::Error, "The `node_name_first` value must be Boolean, not #{string_array[1].inspect}"
+          end
+        end
+        config_hash[string_array[0].to_sym] = string_array[1]
+      end
+    end
+
     if file_hash[:tagmap]
       tagmap = file_hash[:tagmap].join("\n")
       taglists = parse_tagmap(tagmap)
@@ -129,6 +148,14 @@ Puppet::Reports.register_report(:tagmail) do
 
     if not config_hash[:reportfrom] or config_hash[:reportfrom] == ''
       config_hash[:reportfrom] = 'Puppet Agent'
+    end
+
+    if not config_hash[:subject_string] or config_hash[:subject_string] == ''
+      config_hash[:subject_string] = 'Puppet Report for '
+    end
+
+    if not config_hash[:node_name_first] or config_hash[:node_name_first] == ''
+      config_hash[:node_name_first] = false
     end
 
     config_hash
@@ -206,7 +233,6 @@ Puppet::Reports.register_report(:tagmail) do
             reports.each do |emails, messages|
               smtp.open_message_stream(tagmail_conf[:reportfrom], *emails) do |p|
                 p.puts "From: #{tagmail_conf[:reportfrom]}"
-                p.puts "Subject: Puppet Report for #{self.host}"
                 p.puts "To: " + emails.join(", ")
                 p.puts "Date: #{Time.now.rfc2822}"
                 p.puts
@@ -225,7 +251,11 @@ Puppet::Reports.register_report(:tagmail) do
             # We need to open a separate process for every set of email addresses
             IO.popen(tagmail_conf[:sendmail] + " " + emails.join(" "), "w") do |p|
               p.puts "From: #{tagmail_conf[:reportfrom]}"
-              p.puts "Subject: Puppet Report for #{self.host}"
+              if tagmail_conf[:node_name_first] == false
+                p.puts "Subject: #{tagmail_conf[:subject_string]} #{self.host}"
+              else
+                p.puts "Subject: #{self.host} #{tagmail_conf[:subject_string]}"
+              end
               p.puts "To: " + emails.join(", ")
               p.puts
               p.puts messages

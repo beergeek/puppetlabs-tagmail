@@ -58,6 +58,10 @@ smtphelo = example.org
 [tagmap]
 all: me@example.com
 webserver, !mailserver: httpadmins@example.com, you@example.com
+
+[strings]
+subject_string = に対するPuppetレポート
+node_name_first = true
 ~~~
 
 Instead of specifying `smtpserver`, `smtpport` and `smtphelo`, you can specify the `sendmail` option with a path to your sendmail binary (defaulted to `/usr/sbin/sendmail`). If you do not specify `smtpserver`, tagmail will default to using sendmail.
@@ -70,6 +74,10 @@ sendmail = /usr/sbin/sendmail
 [tagmap]
 all: me@example.com
 webserver, !mailserver: httpadmins@example.com, you@example.com
+
+[strings]
+subject_string = に対するPuppetレポート
+node_name_first = true
 ~~~
 
 Each line in the `[tagmap]` section of `tagmail.conf` should include a comma-separated list of tags, a colon, and a comma-separated list of email addresses to receive log messages containing the provided tags.
@@ -79,6 +87,8 @@ If you prefix a tag with an exclamation mark, Puppet subtracts any messages with
 Puppet's [loglevels](https://docs.puppetlabs.com/references/latest/metaparameter.html#loglevel) (`debug`, `info`, `notice`, `warning`, `err`, `alert`, `emerg`, `crit`, and `verbose`) can also be used as tags, and the `all` tag always matches every log message.
 
 The above example sends all log messages to `me@example.com`, and all messages from webservers that are not also from mailservers to `httpadmins@example.com` and to `you@example.com`.
+
+The `[strings]` section allows you to change the Subject string for the email.  The `subject_string` setting is the Subject for the email, the default for the Subject is `Puppet Report for`.  The `node_name_first` variable is a boolean value that is used to place the name of the node at the end or beginning of the Subject string, if set to `true` the Subject string will look `node.puppet.com に対するPuppetレポート`.  The default for `node_name_first` is `false`.
 
 
 ## Limitations
